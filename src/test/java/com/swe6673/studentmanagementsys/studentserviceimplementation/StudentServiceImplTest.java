@@ -16,6 +16,7 @@ public class StudentServiceImplTest {
       private StudentRepository studentRepository = mock(StudentRepository.class);
       private StudentService studentService = new StudentServiceImpl(studentRepository);
 
+      // this test is to check if the student is saved successfully
       @Test
       void addNewStudent_ValidDetails() {
             Student newStudent = new Student("John", "Doe", "john.doe@example.com");
@@ -23,22 +24,43 @@ public class StudentServiceImplTest {
 
             Student savedStudent = studentService.saveStudent(newStudent);
 
-            assertNull(savedStudent);
-           
+            assertNotNull(savedStudent);
+
       }
 
+      // this is a negative test case to check if the student is saved successfully
+      // when the email is invalid
       @Test
       void addNewStudent_InvalidEmail() {
-      Student newStudent = new Student("John", "Doe", "not-an-email");
-      when(studentRepository.save(any(Student.class))).thenThrow(new RuntimeException("Invalid email"));
+            Student newStudent = new Student("John", "Doe", "not-an-email");
+            when(studentRepository.save(any(Student.class))).thenThrow(new RuntimeException("Invalid email"));
 
-      Exception exception = assertThrows(RuntimeException.class, () -> {
-            studentService.saveStudent(newStudent);
-      });
+            Exception exception = assertThrows(RuntimeException.class, () -> {
+                  studentService.saveStudent(newStudent);
+            });
 
-      assertTrue(exception.getMessage().contains("Invalid email"));
+            assertTrue(exception.getMessage().contains("Invalid email"));
       }
-    
+
+      // this test is to check if all registered students are viewed on the list
+      @Test
+      void viewAllRegisteredStudents() {
+            List<Student> allStudents = List.of(
+                        new Student("John", "Doe", "john.doe@example.com"),
+                        new Student("Jane", "Doe", "jane.doe@example.com"));
+            when(studentRepository.findAll()).thenReturn(allStudents);
+
+            List<Student> retrievedStudents = studentService.getAllStudents();
+
+            assertNotNull(retrievedStudents);
+            assertEquals(2, retrievedStudents.size());
+            assertEquals("John", retrievedStudents.get(0).getFirstName());
+            assertEquals("Jane", retrievedStudents.get(1).getFirstName());
+            verify(studentRepository, times(1)).findAll();
+      }
+
+      // this test case verifies that the updateStudent method correctly updates an
+      // existing student's details in the system.
       @Test
       void updateStudent_ValidChanges() {
             Student existingStudent = new Student("Jane", "Doe", "jane.doe@example.com");
@@ -54,6 +76,8 @@ public class StudentServiceImplTest {
             assertEquals("Smith", savedStudent.getLastName());
       }
 
+      // this test case checks the system's behavior when attempting to update a
+      // student record that does not exist in the database.
       @Test
       void updateNonExistentStudent() {
             Student nonExistentStudent = new Student("Non", "Existent", "non.existent@example.com");
@@ -66,11 +90,14 @@ public class StudentServiceImplTest {
             });
             String message = exception.getMessage();
             if (message != null && message.contains("Student not found")) {
-            assertTrue(exception.getMessage().contains("Student not found"));
+                  assertTrue(exception.getMessage().contains("Student not found"));
             }
-            
+
       }
 
+      // this test case verifies that the deleteStudentById method correctly
+      // successfully instructs the repository to delete a student record with a
+      // specific ID (1L) from the database.
       @Test
       void deleteStudent_ExistingStudent() {
             Long studentId = 1L;
@@ -81,6 +108,8 @@ public class StudentServiceImplTest {
             verify(studentRepository, times(1)).deleteById(studentId);
       }
 
+      // this test case ensures the system throws an exception when attempting to
+      // delete a a student using a non-existent ID (999L)
       @Test
       void deleteNonExistentStudent() {
             Long nonExistentStudentId = 999L;
@@ -93,6 +122,8 @@ public class StudentServiceImplTest {
             assertTrue(exception.getMessage().contains("Student not found"));
       }
 
+      // this test checks that searching for a student by name returns the expected
+      // results
       @Test
       void searchStudent_ExistingName() {
             String query = "John";
@@ -107,6 +138,8 @@ public class StudentServiceImplTest {
             verify(studentRepository, times(1)).findByFirstNameContainingOrLastNameContaining(query, query);
       }
 
+      // this test case verifies that the searchStudents method returns an empty list
+      // when no students match the search query.
       @Test
       void searchStudent_NoMatch() {
             String query = "NonExistentName";
@@ -118,6 +151,8 @@ public class StudentServiceImplTest {
             verify(studentRepository, times(1)).findByFirstNameContainingOrLastNameContaining(query, query);
       }
 
+      // this test case ensures the system throws an exception when attempting to
+      // search for a student using a null query.
       @Test
       void searchStudent_NullQuery() {
             String query = null;
